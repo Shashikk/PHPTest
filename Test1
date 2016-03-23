@@ -1,0 +1,235 @@
+<?php
+/*
+Template Name: QueDashboard
+*/
+
+get_header();
+
+function crypto_rand_secure($min, $max)
+{
+    $range = $max - $min;
+    if ($range < 1) return $min; // not so random...
+    $log = ceil(log($range, 2));
+    $bytes = (int) ($log / 8) + 1; // length in bytes
+    $bits = (int) $log + 1; // length in bits
+    $filter = (int) (1 << $bits) - 1; // set all lower bits to 1
+    do {
+        $rnd = hexdec(bin2hex(openssl_random_pseudo_bytes($bytes)));
+        $rnd = $rnd & $filter; // discard irrelevant bits
+    } while ($rnd >= $range);
+    return $min + $rnd;
+}
+
+function getToken($length)
+{
+    $token = "";
+    $codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    $codeAlphabet.= "abcdefghijklmnopqrstuvwxyz";
+    $codeAlphabet.= "0123456789";
+    $max = strlen($codeAlphabet) - 1;
+    for ($i=0; $i < $length; $i++) {
+        $token .= $codeAlphabet[crypto_rand_secure(0, $max)];
+    }
+    return $token;
+}
+?>
+</header>
+
+<nav class="navbar navbar-default">
+  <div class="container">
+ <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Q</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <form class="navbar-form navbar-left" role="search">
+        <div class="form-group">
+          <input type="text" id="QueSearch" class="form-control" placeholder="Search">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Manage <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Add Que</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                     <a data-toggle="collapse" href="#collapse1">Add Queue</a>    
+                    </div>
+                    <div id="collapse1" class="panel-collapse collapse">
+                        <form class="form-inline">
+                          <div class="form-group">
+                            <label for="QueCode">QueCode</label>
+                            <input type="text" class="form-control" id="QueCode" style= "background-color: #ecdede" value="<?php echo getToken(10); ?>" readonly>
+                          </div>
+                            &nbsp;&nbsp;&nbsp;
+                          <div class="form-group">
+                            <label for="exampleInputEmail2">Purpose</label>
+                            <input type="text" class="form-control" id="QueDesc" placeholder="Put purspose of Queue here">
+                          </div>
+                            &nbsp;&nbsp;&nbsp;
+                          <div class="form-group">
+                            <label for="exampleInputEmail2">Purpose</label>
+                            <input type="datetime-local" class="form-control" id="StartTime" placeholder="Starttime">
+                          </div>
+                            &nbsp;&nbsp;&nbsp;
+                          <div class="form-group">
+                            <label for="exampleInputEmail2">Purpose</label>
+                            <input type="datetime-local" class="form-control" id="EndTime" placeholder="Endtime">
+                          </div>
+                            &nbsp;&nbsp;&nbsp;
+                          <!--
+                          <div class="form-group">
+                            <label for="exampleInputEmail2">Email</label>
+                            <input type="email" class="form-control" id="QueEmail" placeholder="jane.doe@example.com">
+                          </div>
+                            &nbsp;&nbsp;&nbsp;
+                          <div class="form-group">
+                            <label for="tel"> Telephone </label>
+                            <input type="tel" class="form-control" id="QueTel" placeholder="+91-xxxxxx">
+                          </div>
+                          <!--<button type="button"  >Create Queue</button>-->
+                            
+                            <button onclick="onCreateQue()">
+                            <tr>
+                            <td width="19%"><img id="btnloading" src="<?php bloginfo('stylesheet_directory')?>/images/loading.gif" style="display: none;"/></td>
+                            <td id="txtBtn" width="81%">Create Queue</td>
+                            </tr>
+                            </button>
+                          <button type="button" class="btn btn-primary" onclick="onCreateQue()" style="display: none;" >Create Queue</button>
+                        </form>                    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="demo"><h3>Let AJAX change this text</h3></div>
+<?php
+    global $wpdb;
+    $userid = get_current_user_id();
+    $queues = $wpdb->get_results("SELECT `wp1_queues`.`qid`,
+                                        `wp1_queues`.`userid`,
+                                        `wp1_queues`.`qcode`,
+                                        `wp1_queues`.`description`,
+                                        `wp1_queues`.`creationtime`,
+                                        `wp1_queues`.`starttime`,
+                                        `wp1_queues`.`endtime`
+                                        FROM `wp1_queues` WHERE `wp1_queues`.`userid`=$userid;");
+?>
+    <div class="container">
+<?php 
+    $rowcount = 0;
+foreach ( $queues as $que )
+{
+    //var_dump($que);
+    $rowcount++;
+    if (($rowcount == 1) or (($rowcount -1) % 3 == 0) )
+    {
+?>
+        <div class="row">
+<?php 
+    }
+    
+    {
+?>
+            <div class="col-md-4">
+                <div class="panel panel-default">
+                    <div class="panel-heading"><?php echo $que->qcode;?>
+                    <img src="https://chart.googleapis.com/chart?chs=75x75&cht=qr&chl=http%3A%2F%2F<?php echo $que->qcode;?>%2F&choe=UTF-8" title="<?php echo $que->qcode;?>" />
+                    </div>
+                    <p>Description :<?php echo $que->description; ?></p>
+                    <p>Created by : <?php $user_info = get_userdata($que->userid); echo $user_info->user_login; ?></p>
+                </div>
+            </div>
+<?php 
+    }
+    if ( (($rowcount) % 3 == 0) )
+    {
+?>
+        </div>
+<?php
+    }
+?>
+<?php
+}    
+?>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="panel panel-default">
+                    <div class="panel-heading">Q1</div>
+                    Q1
+                </div>
+                
+            </div>
+            <div class="col-md-4">
+                <div class="panel panel-default">
+                    <div class="panel-heading">Q1</div>
+                Q2
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="panel panel-default">
+                    <div class="panel-heading">Q1</div>
+                QNew
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    function onCreateQue() {
+        document.getElementById("btnloading").style.display = 'inline-block';
+        
+        //document.getElementById("txtBtn").style.display = 'none';
+        
+        var inputs = document.getElementsByClassName("form-control");
+        var formdata = new FormData();
+        for (var i = 0; i < inputs.length; i++) {
+            formdata.append(inputs[i].id, inputs[i].value);
+        }
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState == 4 && xhttp.status == 200) {
+                document.getElementById("demo").innerHTML = xhttp.responseText;
+                document.getElementById("btnloading").style.display = 'none';
+                //document.getElementById("txtBtn").style.display = 'inline-block';
+            }
+        };
+
+        var data = new FormData();
+        data.append('user', 'person');
+        data.append('pwd', 'password');
+        data.append('organization', 'place');
+        data.append('requiredkey', 'key');
+        //xhttp.open("GET", "/QServices", true);
+        xhttp.open("POST", "/QServices", true);
+        xhttp.send(formdata);
+    }
+</script>
+
+<?php get_footer(); ?>
